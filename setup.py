@@ -1,26 +1,57 @@
 #!/usr/bin/env python3
 
-__requires__ = '''
-setuptools>=34.4.0
-'''
-
-from setuptools import setup
+from distutils.errors import DistutilsSetupError
+from distutils import log
+import ctypes.util
+import os
+import re
 import subprocess
-from distutils.cmd import Command
+import shutil
+import sys
 
-class CopyLibusbDylib(Command):
-    description = 'copy the brew-installed libusb1 dylib to the package and make it portable'
-    user_options = []
-    extra_args = []
+from setuptools import Distribution, setup
+from setuptools.command.install import install
 
-    def initialize_options(self):
-        pass
 
-    def finalize_options(self):
-        pass
+class BinaryDistribution(Distribution):
+
+    def has_ext_modules(self):
+        return True
+
+
+class Install(install):
 
     def run(self):
-        cmd = ['bash', 'copy_libusb.sh']
-        subprocess.check_call(cmd)
+        if sys.platform.startswith('linux'):
+            # On Linux, ctypes.util.find_library does not return a absolute path...
+            listing = subprocess.check_output('ldconfig -p'.split(), stdin=subprocess.DEVNULL)
+            for line in listing.decode().split('\n'):
+                # libusb-1.0.so (libc6,x86-64) => /usr/lib/libusb-1.0.so
+                m = re.match(r'^\s+(?P<basename>libusb-1\.0\.so(?P<version>\.\d+)?) \(libc6,x86-64\)\s+=>\s+(?P<abspath>[^ ]+(?P=basename))$', line)
+                if m is not None:
+                    libusb_path = m.group('abspath')
+                    libusb_name = os.path.basename(libusb_path)
+                    version = m.group('version')
+                    if version is not None:
+                        libusb_name = libusb_name[:-len(version)]
+                    break
+            else:
+                libusb_path, libusb_name = None
+        elif sys.platform.startswith('darwin'):
+            libusb_path = ctypes.util.find_library('usb-1.0')
+            libusb_name = os.path.basename(libusb_path)
+        elif sys.platform.startswith('win32'):
+            libusb_path = ctypes.util.find_library('libusb-1.0')
+            libusb_name = os.path.basename(libusb_path)
+        else:
+            raise DistutilsSetupError('unsupported platform: %s' % sys.platform)
+        assert None not in (libusb_path, libusb_name)
+        # Force platlib installation (otherwise purelib).
+        self.install_lib = self.install_platlib
+        super().run()
+        libusb_install = os.path.join(self.install_lib, 'pyusb_libusb1_backend', libusb_name)
+        log.info('copying %s => %s' % (libusb_path, libusb_install))
+        shutil.copy(libusb_path, libusb_install)
 
-setup(cmdclass={'copy_libusb': CopyLibusbDylib})
+
+setup(cmdclass={'install': Install}, distclass=BinaryDistribution)
