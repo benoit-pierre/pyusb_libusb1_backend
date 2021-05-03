@@ -44,3 +44,9 @@ jobs:
         with:
           name: Wheels (${{ runner.os }})
           path: wheelhouse/*
+
+      - name: Sanity check
+        run: |
+          python -m venv venv
+          ./venv/bin/pip install -f wheelhouse pyusb_libusb1_backend
+          ./venv/bin/python -I check.py
