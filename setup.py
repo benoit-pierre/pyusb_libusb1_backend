@@ -20,14 +20,22 @@ libusb_srcs = ('''
                sync.c
                '''.split())
 libusb_libs = []
+libusb_ldflags = []
 
 if sys.platform.startswith('darwin'):
-   libusb_incs.insert(0, os.path.join(libusb_dir, 'Xcode'))
-   libusb_srcs.extend('''
-                      os/events_posix.c
-                      os/threads_posix.c
-                      os/darwin_usb.c
-                      '''.split())
+    libusb_incs.insert(0, os.path.join(libusb_dir, 'Xcode'))
+    libusb_srcs.extend('''
+                       os/events_posix.c
+                       os/threads_posix.c
+                       os/darwin_usb.c
+                       '''.split())
+    libusb_libs.extend('''
+                       objc
+                       '''.split())
+    libusb_ldflags.extend('''
+                          -Wl,-framework,IOKit
+                          -Wl,-framework,CoreFoundation
+                          '''.split())
 
 if sys.platform.startswith('linux'):
     if not os.path.exists(os.path.join(libusb_dir, 'configure')):
@@ -56,6 +64,7 @@ libusb_extension = Extension(
     include_dirs=libusb_incs,
     sources=libusb_srcs,
     libraries=libusb_libs,
+    extra_link_args=libusb_ldflags,
 )
 
 setup(ext_modules=[libusb_extension])
