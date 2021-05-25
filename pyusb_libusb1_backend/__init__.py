@@ -1,5 +1,5 @@
 from importlib.util import find_spec
-import sys
+
 import usb.backend.libusb1
 
 
@@ -13,10 +13,6 @@ def get_pyusb_backend():
     If there is no custom dylib detected or the platform isn't Mac,
     we return None in order to use pyusb's default behavior.
     """
-
-    if not sys.platform.startswith(('darwin', 'linux')):
-        return None
-
     spec = find_spec('pyusb_libusb1_backend.libusb')
     if spec is None:
         return None
