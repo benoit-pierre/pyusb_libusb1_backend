@@ -1,2 +1,3 @@
 include libusb_py_stub.c
+include tests/test_*.py
 prune libusb
