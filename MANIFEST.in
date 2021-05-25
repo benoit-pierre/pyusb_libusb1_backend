@@ -1,0 +1,2 @@
+include libusb_py_stub.c
+prune libusb
