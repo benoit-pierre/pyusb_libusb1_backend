@@ -94,6 +94,7 @@ for var in libusb_deps, libusb_incs, libusb_srcs, libusb_ldflags:
             src=libusb_src_dir
         )
 
+
 libusb_extension = Extension(
     'pyusb_libusb1_backend.libusb',
     depends=libusb_deps,
@@ -101,14 +102,20 @@ libusb_extension = Extension(
     sources=libusb_srcs,
     libraries=libusb_libs,
     extra_link_args=libusb_ldflags,
+    # Make the extension optional, so the package
+    # can be installed from source distribution,
+    # except when cibuildwheel is being used.
     optional=os.environ.get('CIBUILDWHEEL', '0') != '1',
 )
+
+
 class BuildExt(build_ext):
 
     def build_extension(self, ext):
         if ext is libusb_extension and \
            os.path.exists(libusb_src_dir) and \
            sys.platform.startswith('linux'):
+            # Need to generate `config.h` for the Linux build.
             if not os.path.exists(os.path.join(libusb_dir, 'configure')):
                 log.info('running libusb bootstrap.sh')
                 subprocess.check_call(('./bootstrap.sh'), cwd=libusb_dir)
