@@ -101,11 +101,14 @@ libusb_extension = Extension(
     sources=libusb_srcs,
     libraries=libusb_libs,
     extra_link_args=libusb_ldflags,
+    optional=True,
 )
 class BuildExt(build_ext):
 
     def build_extension(self, ext):
-        if ext is libusb_extension and sys.platform.startswith('linux'):
+        if ext is libusb_extension and \
+           os.path.exists(libusb_src_dir) and \
+           sys.platform.startswith('linux'):
             if not os.path.exists(os.path.join(libusb_dir, 'configure')):
                 log.info('running libusb bootstrap.sh')
                 subprocess.check_call(('./bootstrap.sh'), cwd=libusb_dir)
