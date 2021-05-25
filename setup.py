@@ -64,6 +64,7 @@ if sys.platform.startswith('linux'):
                        udev
                        pthread
                        '''.split())
+    libusb_ldflags.append('-Wl,-strip-debug')
 
 if sys.platform.startswith('win32'):
     libusb_deps.extend('''
