@@ -101,7 +101,7 @@ libusb_extension = Extension(
     sources=libusb_srcs,
     libraries=libusb_libs,
     extra_link_args=libusb_ldflags,
-    optional=True,
+    optional=os.environ.get('CIBUILDWHEEL', '0') != '1',
 )
 class BuildExt(build_ext):
 
